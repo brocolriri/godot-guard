@@ -8,13 +8,25 @@ as an **editor plugin you can enable in Godot itself**, as three Claude Code ski
 hooks that block `.uid` / `.godot/` writes, and a verify run (import → parse → every scene → N frames)
 that refuses to let the agent say "done" until the project actually boots.
 
-| | For | Price |
-|---|---|---|
-| **[Godot 4 Guardrails Pro](https://brocolriri.gumroad.com/l/godot-guard-pro)** | Claude Code — 12 skills, 3 hooks, 3 `CLAUDE.md` templates | **$24** |
-| **[Godot 4 Guardrails Crosstool](https://brocolriri.gumroad.com/l/godot-guard-crosstool)** | Cursor · Codex CLI · GitHub Copilot — 6 topics × 3 formats, 3 Cursor hooks | **$19** |
-| **[Both editions](https://brocolriri.gumroad.com/l/godot-guard-both)** | bundle (separately $43) | **$29** |
+| | For | What it enforces | Price |
+|---|---|---|---|
+| **[Godot 4 Guardrails Pro](https://brocolriri.gumroad.com/l/godot-guard-pro)** | Claude Code | Blocks the write before Godot-3 code lands; refuses "done" until the engine has run the project | **$24** |
+| **[Godot 4 Guardrails Crosstool](https://brocolriri.gumroad.com/l/godot-guard-crosstool)** | Cursor · Codex CLI · GitHub Copilot | Cursor hooks refuse the edit; the verify loop gives the verdict for every agent | **$19** |
+| **[Both editions](https://brocolriri.gumroad.com/l/godot-guard-both)** | bundle (separately $43) | | **$29** |
 
 14-day refund, no questions. Details below, or scroll to [Pro version](#pro-version).
+
+### How this differs from the other Godot agent skill packs
+
+There are good free ones, and some are much broader than this — dozens of skills covering 2D, 3D,
+audio, navigation, dialogue and more. They are **knowledge**: they tell the agent what is correct.
+
+This one is a **lock**. A rule in a markdown file is a request — the agent reads it, or forgets it,
+and the wrong code lands in your repo either way. Here the hook refuses the write, and the verify
+loop boots the project in the real engine before the agent is allowed to say "done".
+
+If you want breadth of advice, take one of the free packs. If you want the agent to be *unable* to
+leave your project broken, that is what the paid editions are for.
 
 ---
 
