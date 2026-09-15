@@ -1,0 +1,855 @@
+{
+ "schema": "godot3_isms/1",
+ "verified_on": "2026-09-15",
+ "verified_against": "Godot 4.7 class reference (docs 'stable' = 4.7), 4.7 branch source, upgrading_to_godot_4 guide",
+ "regex_flags": "python re, compile with re.MULTILINE; apply per GDScript source file",
+ "not_isms_do_not_flag": [
+  "lerp(a, b, t) on Vector2/Vector3/Color and lerp_angle(from, to, weight) — valid @GlobalScope functions (https://docs.godotengine.org/en/stable/classes/class_@globalscope.html)",
+  "instance_from_id(id), is_instance_valid(obj), is_instance_id_valid(id) — valid globals (https://docs.godotengine.org/en/stable/classes/class_@globalscope.html)",
+  "randomize(), randi(), randf() — valid; note randomize() is now called automatically at startup (https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html)",
+  "get_node_or_null(path), has_node(path), %UniqueName access — valid Node API",
+  "connect(\"sig\", callable) two-argument string form — valid (warn only, see connect_string_2arg)",
+  "emit_signal(\"sig\", args) — valid (Object.emit_signal(signal: StringName, ...)); sig.emit() preferred (https://docs.godotengine.org/en/stable/classes/class_object.html)",
+  "Transform2D, Vector2/3/4, Basis, Plane, AABB, Rect2 — unchanged names",
+  "await on a coroutine (a function that itself awaits) — valid"
+ ],
+ "rows": [
+  {
+   "id": "yield_call",
+   "pattern": "\\byield\\s*\\(",
+   "godot3_form": "yield(obj, \"signal\") / var x = yield(f(), \"completed\")",
+   "godot4_form": "await obj.signal / var x = await f()",
+   "note": "`yield` is kept only as a reserved keyword for transition; it does not work. GDScript basics keyword table.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/gdscript_basics.html"
+  },
+  {
+   "id": "yield_create_timer",
+   "pattern": "\\byield\\s*\\(\\s*get_tree\\(\\)\\.create_timer\\(",
+   "godot3_form": "yield(get_tree().create_timer(1.0), \"timeout\")",
+   "godot4_form": "await get_tree().create_timer(1.0).timeout",
+   "note": "SceneTree.create_timer(time_sec, process_always=true, process_in_physics=false, ignore_time_scale=false) returns SceneTreeTimer; await its `timeout` signal.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_scenetree.html"
+  },
+  {
+   "id": "await_timer_without_timeout",
+   "pattern": "\\bawait\\s+get_tree\\(\\)\\.create_timer\\([^)\\n]*\\)\\s*(#.*)?$",
+   "godot3_form": "(hallucination) await get_tree().create_timer(1.0)",
+   "godot4_form": "await get_tree().create_timer(1.0).timeout",
+   "note": "hallucination: awaiting the SceneTreeTimer object itself does not wait (REDUNDANT_AWAIT warning); you must await the `timeout` signal.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_scenetree.html"
+  },
+  {
+   "id": "connect_string_3arg",
+   "pattern": "\\.connect\\s*\\(\\s*[\\\"'][^\\\"'\\n]+[\\\"']\\s*,\\s*[^,()\\n]+\\s*,\\s*[\\\"']",
+   "godot3_form": "obj.connect(\"pressed\", self, \"_on_pressed\")",
+   "godot4_form": "obj.pressed.connect(_on_pressed)  # or obj.connect(\"pressed\", Callable(self, \"_on_pressed\"))",
+   "note": "Object.connect(signal: StringName, callable: Callable, flags: int = 0). The 3-argument (target, method-name) form no longer exists.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_object.html"
+  },
+  {
+   "id": "connect_string_2arg",
+   "pattern": "\\.connect\\s*\\(\\s*[\\\"'][^\\\"'\\n]+[\\\"']\\s*,\\s*[^,()\\n]+\\s*\\)",
+   "godot3_form": "obj.connect(\"pressed\", callable)  (string-based, still valid)",
+   "godot4_form": "obj.pressed.connect(callable)",
+   "note": "Valid in Godot 4 but the upgrade guide recommends the Signal-based syntax so signal-name typos are caught at parse time.",
+   "severity": "warn",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "disconnect_is_connected_3arg",
+   "pattern": "\\.(disconnect|is_connected)\\s*\\(\\s*[\\\"'][^\\\"'\\n]+[\\\"']\\s*,\\s*[^,()\\n]+\\s*,\\s*[\\\"']",
+   "godot3_form": "obj.disconnect(\"sig\", self, \"m\") / obj.is_connected(\"sig\", self, \"m\")",
+   "godot4_form": "obj.sig.disconnect(m) / obj.sig.is_connected(m)",
+   "note": "Object.disconnect(signal: StringName, callable: Callable); is_connected(signal, callable).",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_object.html"
+  },
+  {
+   "id": "signal_any_hallucination",
+   "pattern": "\\bSignal\\.any\\s*\\(|\\bawait\\s+[\\w.$]+\\.any\\s*\\(",
+   "godot3_form": "(hallucination) await Signal.any([a, b])",
+   "godot4_form": "await a  # Signal has no any(); await one signal, or write a small aggregator node/lambda",
+   "note": "hallucination: Signal's methods are connect, disconnect, emit, get_connections, get_name, get_object, get_object_id, has_connections, is_connected, is_null. No any()/wait().",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_signal.html"
+  },
+  {
+   "id": "signal_wait_hallucination",
+   "pattern": "\\bawait\\s+[\\w.$]+\\.wait\\s*\\(\\s*\\)",
+   "godot3_form": "(hallucination) await sig.wait()",
+   "godot4_form": "await sig",
+   "note": "hallucination: Signal has no wait(); `await signal` is the whole syntax. (May be a false positive if a user coroutine is literally named wait.)",
+   "severity": "warn",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_signal.html"
+  },
+  {
+   "id": "funcref",
+   "pattern": "\\bfuncref\\s*\\(",
+   "godot3_form": "funcref(self, \"method\")",
+   "godot4_form": "Callable(self, \"method\")  # or just self.method",
+   "note": "Callable(object: Object, method: StringName) constructor; methods are first-class Callables in Godot 4.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_callable.html"
+  },
+  {
+   "id": "thread_start_string",
+   "pattern": "\\.start\\s*\\(\\s*self\\s*,\\s*[\\\"']",
+   "godot3_form": "thread.start(self, \"_work\", data)",
+   "godot4_form": "thread.start(_work.bind(data))",
+   "note": "Threading syntax changed to Callable-based start().",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "tween_node_3x",
+   "pattern": "\\.interpolate_property\\s*\\(|\\btween_all_completed\\b|\\btween_completed\\b",
+   "godot3_form": "$Tween.interpolate_property(...); $Tween.start(); yield($Tween, \"tween_all_completed\")",
+   "godot4_form": "var t := create_tween(); t.tween_property(obj, \"prop\", final_val, dur); await t.finished",
+   "note": "The Tween node was removed in favor of Tweeners (Tween.tween_property(object, property: NodePath, final_val, duration: float)); Tween signals are finished, step_finished, loop_finished.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "idle_frame",
+   "pattern": "\\bidle_frame\\b",
+   "godot3_form": "yield(get_tree(), \"idle_frame\")",
+   "godot4_form": "await get_tree().process_frame",
+   "note": "SceneTree signals in 4.x are process_frame and physics_frame (idle_frame was the 3.x name).",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_scenetree.html"
+  },
+  {
+   "id": "super_dot_call",
+   "pattern": "^\\s*\\.\\s*_?\\w+\\s*\\(",
+   "godot3_form": "._ready()  (call parent implementation)",
+   "godot4_form": "super()  # or super._ready()",
+   "note": "Lifecycle functions no longer implicitly call the parent; use super(). The leading-dot call syntax is gone.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "instance_call",
+   "pattern": "\\.instance\\s*\\(\\s*\\)",
+   "godot3_form": "packed_scene.instance()",
+   "godot4_form": "packed_scene.instantiate()",
+   "note": "PackedScene.instance() -> instantiate(). (The 3-to-4 converter handles this with a custom rule.)",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "change_scene",
+   "pattern": "\\.change_scene(_to)?\\s*\\(",
+   "godot3_form": "get_tree().change_scene(path) / change_scene_to(packed)",
+   "godot4_form": "get_tree().change_scene_to_file(path) / change_scene_to_packed(packed)",
+   "note": "SceneTree has change_scene_to_file(path: String), change_scene_to_packed(packed_scene), change_scene_to_node(); no change_scene()/change_scene_to().",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_scenetree.html"
+  },
+  {
+   "id": "object_instance_from_id",
+   "pattern": "\\bObject\\.instance_from_id\\s*\\(",
+   "godot3_form": "(hallucination) Object.instance_from_id(id)",
+   "godot4_form": "instance_from_id(id)  # global function; also is_instance_id_valid(id)",
+   "note": "instance_from_id(instance_id: int) -> Object is an @GlobalScope function in both 3.x and 4.x; it is not a static method on Object. Plain `instance_from_id(...)` must NOT be flagged.",
+   "severity": "warn",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_@globalscope.html"
+  },
+  {
+   "id": "kinematicbody",
+   "pattern": "\\bKinematicBody(2D)?\\b",
+   "godot3_form": "extends KinematicBody2D / KinematicBody",
+   "godot4_form": "extends CharacterBody2D / CharacterBody3D",
+   "note": "Renamed in 4.0.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "move_and_slide_args",
+   "pattern": "\\bmove_and_slide\\s*\\(\\s*[^)\\s][^)]*\\)",
+   "godot3_form": "velocity = move_and_slide(velocity, Vector2.UP)",
+   "godot4_form": "velocity = v  # property\nmove_and_slide()  # no args, returns bool",
+   "note": "CharacterBody2D.move_and_slide() takes no arguments and uses/modifies the `velocity` property (same for CharacterBody3D). up_direction is a property.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_characterbody2d.html"
+  },
+  {
+   "id": "move_and_slide_assign",
+   "pattern": "\\bvelocity\\s*=\\s*move_and_slide\\s*\\(",
+   "godot3_form": "velocity = move_and_slide(velocity)",
+   "godot4_form": "move_and_slide()  # velocity is updated in place",
+   "note": "move_and_slide() returns bool (collided), not the new velocity.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_characterbody2d.html"
+  },
+  {
+   "id": "move_and_slide_with_snap",
+   "pattern": "\\bmove_and_slide_with_snap\\s*\\(",
+   "godot3_form": "move_and_slide_with_snap(velocity, snap, up)",
+   "godot4_form": "move_and_slide()  # snapping via floor_snap_length property",
+   "note": "Not present in the 4.x CharacterBody2D API; floor_snap_length is a CharacterBody2D property (verified in 4.7 source).",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_characterbody2d.html"
+  },
+  {
+   "id": "get_slide_count",
+   "pattern": "\\.get_slide_count\\s*\\(",
+   "godot3_form": "get_slide_count()",
+   "godot4_form": "get_slide_collision_count()",
+   "note": "CharacterBody2D/3D.",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp"
+  },
+  {
+   "id": "rigidbody_add_force",
+   "pattern": "\\.(add_force|add_central_force|add_torque)\\s*\\(",
+   "godot3_form": "add_force(offset, force) / add_central_force(f) / add_torque(t)",
+   "godot4_form": "apply_force(force, position=Vector2.ZERO) / apply_central_force(f) / apply_torque(t)",
+   "note": "Renamed; note apply_force takes (force, position) — the 3.x add_force took (offset, force). add_constant_force/add_constant_central_force exist in 4.x for persistent forces.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_rigidbody2d.html"
+  },
+  {
+   "id": "apply_impulse_order",
+   "pattern": "\\.apply_impulse\\s*\\(\\s*[^,()\\n]+,\\s*[^,()\\n]+\\)",
+   "godot3_form": "apply_impulse(offset, impulse)",
+   "godot4_form": "apply_impulse(impulse, position=Vector2(0, 0))",
+   "note": "Argument order swapped between 3.x (offset, impulse) and 4.x (impulse, position). Two-argument calls need a manual check.",
+   "severity": "warn",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_rigidbody2d.html"
+  },
+  {
+   "id": "rigidbody_mode",
+   "pattern": "\\.mode\\s*=\\s*(RigidBody2D|RigidBody3D|RigidBody)\\.MODE_\\w+|\\bMODE_(RIGID|STATIC|CHARACTER|KINEMATIC)\\b",
+   "godot3_form": "body.mode = RigidBody2D.MODE_STATIC",
+   "godot4_form": "body.freeze = true; body.freeze_mode = RigidBody2D.FREEZE_MODE_STATIC",
+   "note": "RigidBody2D/3D have no `mode` property in 4.x; use freeze + freeze_mode.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_rigidbody2d.html"
+  },
+  {
+   "id": "raycast_cast_to",
+   "pattern": "\\.cast_to\\b",
+   "godot3_form": "raycast.cast_to",
+   "godot4_form": "raycast.target_position",
+   "note": "RayCast2D/RayCast3D.",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp"
+  },
+  {
+   "id": "physics_servers",
+   "pattern": "\\b(Physics2DServer|Physics2DDirectSpaceState)\\b|\\b(PhysicsServer|PhysicsDirectSpaceState)\\b(?![23]D)",
+   "godot3_form": "Physics2DServer / PhysicsServer / Physics2DDirectSpaceState",
+   "godot4_form": "PhysicsServer2D / PhysicsServer3D / PhysicsDirectSpaceState2D / PhysicsDirectSpaceState3D",
+   "note": "Server class renames.",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp"
+  },
+  {
+   "id": "deg2rad",
+   "pattern": "\\b(deg2rad|rad2deg)\\s*\\(",
+   "godot3_form": "deg2rad(x) / rad2deg(x)",
+   "godot4_form": "deg_to_rad(x) / rad_to_deg(x)",
+   "note": "float deg_to_rad(deg: float); float rad_to_deg(rad: float).",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_@globalscope.html"
+  },
+  {
+   "id": "rand_range",
+   "pattern": "\\brand_range\\s*\\(",
+   "godot3_form": "rand_range(a, b)",
+   "godot4_form": "randf_range(a, b)  # ints: randi_range(a, b)",
+   "note": "float randf_range(from, to); int randi_range(from, to).",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_@globalscope.html"
+  },
+  {
+   "id": "linear_interpolate",
+   "pattern": "\\.linear_interpolate\\s*\\(",
+   "godot3_form": "a.linear_interpolate(b, t)",
+   "godot4_form": "a.lerp(b, t)",
+   "note": "Vector2/Vector3/Color.lerp(). Global lerp(from, to, weight) also works on Vector2 — do not flag lerp()/lerp_angle().",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp"
+  },
+  {
+   "id": "stepify_clamped_tangent",
+   "pattern": "\\.(clamped|tangent)\\s*\\(|\\bstepify\\s*\\(",
+   "godot3_form": "stepify(x, s) / v.clamped(len) / v.tangent()",
+   "godot4_form": "snapped(x, s) / v.limit_length(len) / v.orthogonal()",
+   "note": "Renames map: stepify→snapped, clamped→limit_length, tangent→orthogonal.",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp"
+  },
+  {
+   "id": "type_real",
+   "pattern": "\\bTYPE_REAL\\b",
+   "godot3_form": "TYPE_REAL",
+   "godot4_form": "TYPE_FLOAT",
+   "note": "Variant.Type enum rename.",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp"
+  },
+  {
+   "id": "set_shader_param",
+   "pattern": "\\b[sg]et_shader_param\\s*\\(",
+   "godot3_form": "mat.set_shader_param(\"p\", v)",
+   "godot4_form": "mat.set_shader_parameter(\"p\", v)",
+   "note": "ShaderMaterial.set_shader_parameter(param: StringName, value) / get_shader_parameter(param).",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_shadermaterial.html"
+  },
+  {
+   "id": "file_new",
+   "pattern": "\\bFile\\.new\\s*\\(",
+   "godot3_form": "var f = File.new(); f.open(path, File.READ)",
+   "godot4_form": "var f := FileAccess.open(path, FileAccess.READ)  # null on failure; FileAccess.get_open_error()",
+   "note": "File/Directory were replaced by FileAccess/DirAccess with a different, partly static API.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "file_mode_const",
+   "pattern": "\\bFile\\.(READ|WRITE|READ_WRITE|WRITE_READ)\\b",
+   "godot3_form": "File.READ",
+   "godot4_form": "FileAccess.READ",
+   "note": "ModeFlags live on FileAccess.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_fileaccess.html"
+  },
+  {
+   "id": "directory_new",
+   "pattern": "\\bDirectory\\.new\\s*\\(",
+   "godot3_form": "var d = Directory.new(); d.open(path)",
+   "godot4_form": "var d := DirAccess.open(path)  # or static DirAccess.dir_exists_absolute(), make_dir_recursive_absolute(), get_files_at()",
+   "note": "Directory → DirAccess.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_diraccess.html"
+  },
+  {
+   "id": "os_ticks",
+   "pattern": "\\bOS\\.get_ticks_[mu]sec\\s*\\(",
+   "godot3_form": "OS.get_ticks_msec()",
+   "godot4_form": "Time.get_ticks_msec()  # / Time.get_ticks_usec()",
+   "note": "OS class reference: time functions were removed and are only available in Time.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_os.html"
+  },
+  {
+   "id": "os_datetime",
+   "pattern": "\\bOS\\.get_(datetime|date|time|unix_time|system_time_secs|system_time_msecs|datetime_from_unix_time|unix_time_from_datetime)\\b",
+   "godot3_form": "OS.get_datetime() / OS.get_unix_time()",
+   "godot4_form": "Time.get_datetime_dict_from_system() / Time.get_unix_time_from_system()",
+   "note": "Time and date methods moved from OS to the Time singleton.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "os_screen_window",
+   "pattern": "\\bOS\\.(get_screen_size|get_window_size|set_window_size|window_size|window_fullscreen|set_window_title|window_position|get_screen_count|window_borderless)\\b",
+   "godot3_form": "OS.get_screen_size() / OS.window_size",
+   "godot4_form": "DisplayServer.screen_get_size() / get_window().size / DisplayServer.window_set_mode()",
+   "note": "Screen and window methods moved from OS to DisplayServer (DisplayServer.<object>_<get/set>_property form) or Window.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "engine_editor_hint_prop",
+   "pattern": "\\bEngine\\.editor_hint\\b",
+   "godot3_form": "if Engine.editor_hint:",
+   "godot4_form": "if Engine.is_editor_hint():",
+   "note": "Bound as method is_editor_hint() in 4.7 core_bind.cpp; no editor_hint property.",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/core/core_bind.cpp"
+  },
+  {
+   "id": "json_3x",
+   "pattern": "\\bJSON\\.parse\\s*\\([^)\\n]*\\)\\.result\\b|\\bparse_json\\s*\\(|\\bto_json\\s*\\(|\\bJSON\\.print\\s*\\(",
+   "godot3_form": "JSON.parse(text).result / parse_json(text) / to_json(data) / JSON.print(data)",
+   "godot4_form": "JSON.parse_string(text) / JSON.stringify(data)  # or var j := JSON.new(); j.parse(text); j.data",
+   "note": "JSON has static parse_string(json_string) and stringify(data, indent='', sort_keys=true, full_precision=false); instance parse() returns Error and fills `data`.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_json.html"
+  },
+  {
+   "id": "str2var_family",
+   "pattern": "\\b(str2var|var2str|bytes2var|var2bytes)\\s*\\(",
+   "godot3_form": "str2var / var2str / bytes2var / var2bytes",
+   "godot4_form": "str_to_var / var_to_str / bytes_to_var / var_to_bytes",
+   "note": "Global function renames.",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp"
+  },
+  {
+   "id": "percent_encode",
+   "pattern": "\\.(percent_encode|http_escape)\\s*\\(",
+   "godot3_form": "s.percent_encode() / s.http_escape()",
+   "godot4_form": "s.uri_encode()",
+   "note": "String rename.",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp"
+  },
+  {
+   "id": "imagetexture_create_from_image_instance",
+   "pattern": "(?<!ImageTexture)\\.create_from_image\\s*\\(",
+   "godot3_form": "var t = ImageTexture.new(); t.create_from_image(img)",
+   "godot4_form": "var t := ImageTexture.create_from_image(img)  # static, returns ImageTexture",
+   "note": "ImageTexture.create_from_image(image: Image) is static in 4.x; use set_image()/update() on an existing texture.",
+   "severity": "warn",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_imagetexture.html"
+  },
+  {
+   "id": "button_left",
+   "pattern": "\\bBUTTON_(LEFT|RIGHT|MIDDLE|WHEEL_UP|WHEEL_DOWN)\\b",
+   "godot3_form": "event.button_index == BUTTON_LEFT",
+   "godot4_form": "event.button_index == MOUSE_BUTTON_LEFT",
+   "note": "Enum renames BUTTON_* → MOUSE_BUTTON_* (LEFT, RIGHT, MIDDLE, WHEEL_UP, WHEEL_DOWN verified in renames map).",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp"
+  },
+  {
+   "id": "scancode",
+   "pattern": "\\.(scancode|physical_scancode)\\b",
+   "godot3_form": "event.scancode",
+   "godot4_form": "event.keycode  # / physical_keycode",
+   "note": "InputEventKey rename (scancode→keycode verified; physical_scancode follows the same rename).",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp"
+  },
+  {
+   "id": "doubleclick",
+   "pattern": "\\.doubleclick\\b",
+   "godot3_form": "event.doubleclick",
+   "godot4_form": "event.double_click",
+   "note": "InputEventMouseButton.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "warp_mouse_position",
+   "pattern": "\\bInput\\.warp_mouse_position\\s*\\(",
+   "godot3_form": "Input.warp_mouse_position(p)",
+   "godot4_form": "Input.warp_mouse(p)",
+   "note": "Rename.",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp"
+  },
+  {
+   "id": "set_input_as_handled_tree",
+   "pattern": "get_tree\\(\\)\\.set_input_as_handled\\s*\\(",
+   "godot3_form": "get_tree().set_input_as_handled()",
+   "godot4_form": "get_viewport().set_input_as_handled()",
+   "note": "SceneTree no longer has set_input_as_handled (4.7 scene_tree.cpp: 0 hits); Viewport binds it.",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/scene/main/viewport.cpp"
+  },
+  {
+   "id": "export_keyword",
+   "pattern": "^\\s*export\\s*(\\(|var\\b)",
+   "godot3_form": "export var speed = 10 / export(int, 0, 100) var hp",
+   "godot4_form": "@export var speed := 10 / @export_range(0, 100) var hp: int",
+   "note": "@export annotations: @export, @export_range, @export_enum, @export_file, @export_node_path, ...",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_@gdscript.html"
+  },
+  {
+   "id": "export_enum_hint",
+   "pattern": "^\\s*export\\s*\\(\\s*(int|String)\\s*,\\s*[\\\"']",
+   "godot3_form": "export(int, \"Warrior\", \"Mage\") var cls",
+   "godot4_form": "@export_enum(\"Warrior\", \"Mage\") var cls: int",
+   "note": "@export_enum(names: String, ...) vararg.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_@gdscript.html"
+  },
+  {
+   "id": "onready_keyword",
+   "pattern": "^\\s*onready\\s+var\\b",
+   "godot3_form": "onready var sprite = $Sprite",
+   "godot4_form": "@onready var sprite: Sprite2D = $Sprite2D",
+   "note": "@onready annotation.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_@gdscript.html"
+  },
+  {
+   "id": "tool_keyword",
+   "pattern": "^\\s*tool\\s*(#.*)?$",
+   "godot3_form": "tool",
+   "godot4_form": "@tool",
+   "note": "@tool annotation (must come before extends/class_name).",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_@gdscript.html"
+  },
+  {
+   "id": "setget",
+   "pattern": "\\bsetget\\b",
+   "godot3_form": "var hp = 10 setget set_hp, get_hp",
+   "godot4_form": "var hp := 10:\n\tset(value):\n\t\thp = value\n\tget:\n\t\treturn hp",
+   "note": "GDScript basics: 'The old setget keyword is deprecated and should not be used in new code.' Inline set/get are always called (even inside the class), unlike 3.x.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/gdscript_basics.html"
+  },
+  {
+   "id": "rpc_keywords",
+   "pattern": "^\\s*(remote|master|puppet|remotesync|mastersync|puppetsync)\\s+func\\b",
+   "godot3_form": "remote func f(): / master func / puppet func",
+   "godot4_form": "@rpc(\"any_peer\") func f(): / @rpc(\"authority\", \"call_local\")",
+   "note": "@rpc(mode: String = \"authority\", sync: String = \"call_remote\", transfer_mode: String = \"reliable\", transfer_channel: int = 0).",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_@gdscript.html"
+  },
+  {
+   "id": "pause_mode",
+   "pattern": "\\.pause_mode\\b|\\bPAUSE_MODE_(INHERIT|PROCESS|STOP)\\b",
+   "godot3_form": "pause_mode = PAUSE_MODE_PROCESS",
+   "godot4_form": "process_mode = Node.PROCESS_MODE_ALWAYS  # INHERIT→PROCESS_MODE_INHERIT, STOP→PROCESS_MODE_PAUSABLE",
+   "note": "Node property/enum rename.",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp"
+  },
+  {
+   "id": "pool_arrays",
+   "pattern": "\\bPool(Byte|Int|Real|String|Vector2|Vector3|Color)Array\\b",
+   "godot3_form": "PoolByteArray / PoolIntArray / PoolRealArray / PoolStringArray / PoolVector2Array ...",
+   "godot4_form": "PackedByteArray / PackedInt32Array / PackedFloat32Array / PackedStringArray / PackedVector2Array ...",
+   "note": "Note Int→PackedInt32Array and Real→PackedFloat32Array (64-bit variants also exist).",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp"
+  },
+  {
+   "id": "transform_quat",
+   "pattern": "(?::\\s*|\\bas\\s+|\\bis\\s+)(Transform|Quat)\\b|\\b(Transform|Quat)\\s*\\(",
+   "godot3_form": "var t: Transform / Quat(...)",
+   "godot4_form": "var t: Transform3D / Quaternion(...)",
+   "note": "Transform2D is unchanged; only the 3D Transform and Quat were renamed.",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp"
+  },
+  {
+   "id": "reference_class",
+   "pattern": "\\bextends\\s+Reference\\b|:\\s*Reference\\b",
+   "godot3_form": "extends Reference",
+   "godot4_form": "extends RefCounted",
+   "note": "Class rename.",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp"
+  },
+  {
+   "id": "texture_bare",
+   "pattern": "(?:(?:\\bextends|\\bis|\\bas)\\s+|:\\s*)(?:Texture)\\b|\\b(?:Texture)\\.new\\s*\\(",
+   "godot3_form": "export(Texture) var icon",
+   "godot4_form": "@export var icon: Texture2D",
+   "note": "Texture → Texture2D (Texture is now an abstract base). Renames map notes it may break TextureRect.",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp"
+  },
+  {
+   "id": "dynamicfont",
+   "pattern": "\\bDynamicFont\\b",
+   "godot3_form": "DynamicFont",
+   "godot4_form": "FontFile",
+   "note": "Class rename.",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp"
+  },
+  {
+   "id": "color_lowercase_const",
+   "pattern": "\\bColor\\.(?!(?:r|g|b|a|r8|g8|b8|a8|h|s|v|ok_hsl_h|ok_hsl_s|ok_hsl_l)\\b)[a-z][a-z]+\\b(?!\\s*\\()",
+   "godot3_form": "Color.palegreen / Color.white",
+   "godot4_form": "Color.PALE_GREEN / Color.WHITE",
+   "note": "Color constant names are now uppercase with underscores.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "spatial",
+   "pattern": "\\bSpatial\\b(?!Material|Gizmo)",
+   "godot3_form": "extends Spatial",
+   "godot4_form": "extends Node3D",
+   "note": "Spatial→Node3D; SpatialMaterial→StandardMaterial3D; EditorSpatialGizmo→EditorNode3DGizmo.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "node3d_translation",
+   "pattern": "\\.translation\\b",
+   "godot3_form": "node.translation",
+   "godot4_form": "node.position",
+   "note": "Node3D property rename (may false-positive on i18n code named translation).",
+   "severity": "warn",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp"
+  },
+  {
+   "id": "sprite_bare",
+   "pattern": "(?:(?:\\bextends|\\bis|\\bas)\\s+|:\\s*)(?:Sprite|AnimatedSprite)\\b|\\b(?:Sprite|AnimatedSprite)\\.new\\s*\\(",
+   "godot3_form": "extends Sprite / var s: AnimatedSprite",
+   "godot4_form": "extends Sprite2D / var s: AnimatedSprite2D",
+   "note": "Only type contexts are matched so `$Sprite` node paths are not flagged.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "particles_light_2d",
+   "pattern": "(?:(?:\\bextends|\\bis|\\bas)\\s+|:\\s*)(?:Particles2D|Particles|Light2D)\\b|\\b(?:Particles2D|Particles|Light2D)\\.new\\s*\\(",
+   "godot3_form": "Particles2D / Particles / Light2D",
+   "godot4_form": "GPUParticles2D / GPUParticles3D / PointLight2D",
+   "note": "Renames.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "position2d_marker",
+   "pattern": "(?:(?:\\bextends|\\bis|\\bas)\\s+|:\\s*)(?:Position2D|Position3D)\\b|\\b(?:Position2D|Position3D)\\.new\\s*\\(",
+   "godot3_form": "Position2D / Position3D",
+   "godot4_form": "Marker2D / Marker3D",
+   "note": "Renames.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "visibility_notifier",
+   "pattern": "\\bVisibility(Notifier|Enabler)(2D|3D)?\\b",
+   "godot3_form": "VisibilityNotifier2D / VisibilityNotifier / VisibilityEnabler2D",
+   "godot4_form": "VisibleOnScreenNotifier2D / VisibleOnScreenNotifier3D / VisibleOnScreenEnabler2D",
+   "note": "Renames (Notifier per upgrade guide; Enabler per renames map).",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "bare_3d_bodies",
+   "pattern": "(?:(?:\\bextends|\\bis|\\bas)\\s+|:\\s*)(?:Area|RigidBody|StaticBody|Camera|CollisionShape|Listener)\\b|\\b(?:Area|RigidBody|StaticBody|Camera|CollisionShape|Listener)\\.new\\s*\\(",
+   "godot3_form": "extends Area / RigidBody / StaticBody / Camera / CollisionShape",
+   "godot4_form": "extends Area3D / RigidBody3D / StaticBody3D / Camera3D / CollisionShape3D  (Listener→AudioListener3D)",
+   "note": "All 3D nodes received a 3D suffix in 4.0.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "visual_server",
+   "pattern": "\\bVisualServer\\b",
+   "godot3_form": "VisualServer",
+   "godot4_form": "RenderingServer",
+   "note": "Singleton rename.",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp"
+  },
+  {
+   "id": "tilemap_deprecated",
+   "pattern": "(?:(?:\\bextends|\\bis|\\bas)\\s+|:\\s*)(?:TileMap)\\b|\\b(?:TileMap)\\.new\\s*\\(",
+   "godot3_form": "extends TileMap  (deprecated since 4.3)",
+   "godot4_form": "extends TileMapLayer  (one node per layer)",
+   "note": "TileMap class reference (4.7): 'Deprecated: Use multiple TileMapLayer nodes instead.' Introduced in 4.3.",
+   "severity": "warn",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_tilemap.html"
+  },
+  {
+   "id": "tilemap_setcellv",
+   "pattern": "\\.(set_cellv|get_cellv)\\s*\\(|\\.set_cell\\s*\\(\\s*\\d+\\s*,\\s*\\d+\\s*,",
+   "godot3_form": "tilemap.set_cellv(pos, tile_id) / set_cell(x, y, id)",
+   "godot4_form": "layer.set_cell(coords: Vector2i, source_id: int = -1, atlas_coords: Vector2i = Vector2i(-1, -1), alternative_tile: int = 0) / get_cell_source_id(coords)",
+   "note": "TileMapLayer API is source/atlas based; 3.x tile-id API does not exist.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_tilemaplayer.html"
+  },
+  {
+   "id": "world_to_map",
+   "pattern": "\\.(world_to_map|map_to_world)\\s*\\(",
+   "godot3_form": "tilemap.world_to_map(p) / map_to_world(c)",
+   "godot4_form": "layer.local_to_map(p) / map_to_local(c)",
+   "note": "TileMap/GridMap rename.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "parallax_background",
+   "pattern": "(?:(?:\\bextends|\\bis|\\bas)\\s+|:\\s*)(?:ParallaxBackground)\\b|\\b(?:ParallaxBackground)\\.new\\s*\\(",
+   "godot3_form": "ParallaxBackground + ParallaxLayer",
+   "godot4_form": "Parallax2D  (4.3+)",
+   "note": "ParallaxBackground class reference: 'Deprecated: Use the Parallax2D node instead.' Introduced in 4.3.",
+   "severity": "warn",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_parallaxbackground.html"
+  },
+  {
+   "id": "camera2d_current",
+   "pattern": "\\.current\\s*=\\s*(true|false)\\b",
+   "godot3_form": "camera.current = true",
+   "godot4_form": "camera.enabled = true; camera.make_current()",
+   "note": "Camera2D has no `current` property in 4.x: enabled, make_current(), is_current(). (May false-positive on user properties named current.)",
+   "severity": "warn",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_camera2d.html"
+  },
+  {
+   "id": "control_rect_props",
+   "pattern": "\\.rect_(position|size|min_size|scale|global_position)\\b",
+   "godot3_form": "ctrl.rect_position / rect_size / rect_min_size / rect_scale / rect_global_position",
+   "godot4_form": "ctrl.position / size / custom_minimum_size / scale / global_position",
+   "note": "Control property renames.",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp"
+  },
+  {
+   "id": "control_margins",
+   "pattern": "\\.margin_(left|top|right|bottom)\\b",
+   "godot3_form": "ctrl.margin_left",
+   "godot4_form": "ctrl.offset_left",
+   "note": "Control margin_* → offset_* (renames map warns it breaks NinePatchRect/StyleBox which keep margin names).",
+   "severity": "warn",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp"
+  },
+  {
+   "id": "theme_override_methods",
+   "pattern": "\\.add_(color|font|stylebox|constant)_override\\s*\\(",
+   "godot3_form": "add_color_override(\"font_color\", c)",
+   "godot4_form": "add_theme_color_override(\"font_color\", c)",
+   "note": "Control theme override methods renamed with theme_ infix.",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp"
+  },
+  {
+   "id": "button_pressed_prop",
+   "pattern": "\\.pressed\\s*=\\s*(true|false)\\b",
+   "godot3_form": "button.pressed = true",
+   "godot4_form": "button.button_pressed = true",
+   "note": "BaseButton: `pressed` is now the signal only; the property is button_pressed. Signals are button_up/button_down.",
+   "severity": "warn",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "animatedsprite_playing",
+   "pattern": "\\.playing\\s*=\\s*(true|false)\\b|\\.frames\\s*=",
+   "godot3_form": "anim.playing = true / anim.frames = sf",
+   "godot4_form": "anim.play() / anim.stop() / anim.sprite_frames = sf",
+   "note": "AnimatedSprite2D/3D `playing` property was removed; use play()/stop() or autoplay. frames→sprite_frames.",
+   "severity": "warn",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "canvasitem_update",
+   "pattern": "^\\s*update\\s*\\(\\s*\\)\\s*$|\\.update\\s*\\(\\s*\\)",
+   "godot3_form": "update()  # request redraw",
+   "godot4_form": "queue_redraw()",
+   "note": "CanvasItem.update() → queue_redraw(). Zero-arg update() on other classes may be legitimate.",
+   "severity": "warn",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "canvasitem_raise",
+   "pattern": "\\.raise\\s*\\(\\s*\\)",
+   "godot3_form": "node.raise()",
+   "godot4_form": "node.move_to_front()",
+   "note": "CanvasItem rename.",
+   "severity": "warn",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "set_tooltip",
+   "pattern": "\\.set_tooltip\\s*\\(",
+   "godot3_form": "ctrl.set_tooltip(\"x\")",
+   "godot4_form": "ctrl.tooltip_text = \"x\"  # set_tooltip_text()",
+   "note": "Control rename.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "node_filename",
+   "pattern": "\\.filename\\b",
+   "godot3_form": "node.filename",
+   "godot4_form": "node.scene_file_path",
+   "note": "Node property rename (may false-positive on user variables).",
+   "severity": "warn",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "extents",
+   "pattern": "\\.extents\\b",
+   "godot3_form": "shape.extents",
+   "godot4_form": "shape.size",
+   "note": "BoxShape3D/ReflectionProbe/LightmapGI extents → size (size is full size, extents was half-size: double the value).",
+   "severity": "warn",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "array_empty",
+   "pattern": "\\.empty\\s*\\(\\s*\\)",
+   "godot3_form": "arr.empty()",
+   "godot4_form": "arr.is_empty()",
+   "note": "Array/Dictionary/String.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "array_invert",
+   "pattern": "\\.invert\\s*\\(\\s*\\)",
+   "godot3_form": "arr.invert()",
+   "godot4_form": "arr.reverse()",
+   "note": "Array rename.",
+   "severity": "error",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "array_remove",
+   "pattern": "\\.remove\\s*\\(\\s*\\d+\\s*\\)",
+   "godot3_form": "arr.remove(i)",
+   "godot4_form": "arr.remove_at(i)",
+   "note": "Array rename; DirAccess.remove(path) still exists, so only integer-literal args are matched.",
+   "severity": "warn",
+   "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
+  },
+  {
+   "id": "is_a_parent_of",
+   "pattern": "\\.is_a_parent_of\\s*\\(",
+   "godot3_form": "is_a_parent_of(n)",
+   "godot4_form": "is_ancestor_of(n)",
+   "note": "Node rename.",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp"
+  },
+  {
+   "id": "nav_agent_location",
+   "pattern": "\\.(get_next_location|set_target_location)\\s*\\(",
+   "godot3_form": "agent.get_next_location() / set_target_location(p)",
+   "godot4_form": "agent.get_next_path_position() / agent.target_position = p",
+   "note": "NavigationAgent2D/3D renames.",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp"
+  },
+  {
+   "id": "tilemap_node",
+   "pattern": "type=\"TileMap\"",
+   "godot3_form": "[node type=\"TileMap\"] (deprecated since 4.3)",
+   "godot4_form": "[node type=\"TileMapLayer\"] one per layer",
+   "note": "Scene-file form of tilemap_deprecated. TileMap class reference (4.7): 'Deprecated: Use multiple TileMapLayer nodes instead.'",
+   "severity": "warn",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_tilemap.html",
+   "ext": [
+    "tscn"
+   ]
+  },
+  {
+   "id": "parallax_background_node",
+   "pattern": "type=\"(?:ParallaxBackground|ParallaxLayer)\"",
+   "godot3_form": "[node type=\"ParallaxBackground\"] / ParallaxLayer",
+   "godot4_form": "[node type=\"Parallax2D\"] (4.3+)",
+   "note": "Scene-file form of parallax_background.",
+   "severity": "warn",
+   "source_url": "https://docs.godotengine.org/en/stable/classes/class_parallaxbackground.html",
+   "ext": [
+    "tscn"
+   ]
+  },
+  {
+   "id": "godot3_node_types",
+   "pattern": "type=\"(?:KinematicBody2D|KinematicBody|Spatial|Sprite|AnimatedSprite|Area|RigidBody|StaticBody|Position2D|Position3D|Particles2D|Particles|VisibilityNotifier2D|VisibilityNotifier|MeshInstance|CollisionShape|CollisionPolygon|Path|PathFollow|Camera|Light2D|Navigation2D|Navigation|Listener|ClippedCamera|ARVRCamera|ARVROrigin|ARVRController|Tween|InterpolatedCamera|Portal|Room|RoomManager|Occluder|GIProbe|BakedLightmap|ReflectionProbe|CPUParticles|Particles2D|CSGBox|CSGCylinder|CSGMesh|CSGPolygon|CSGSphere|CSGTorus|CSGCombiner|SoftBody|VehicleBody|VehicleWheel|PhysicalBone|RayCast|SpringArm|BoneAttachment|Skeleton|SkeletonIK|VisualInstance|GeometryInstance|Spatial)\"",
+   "godot3_form": "[node type=\"KinematicBody2D\"] etc. (Godot 3 class names in a scene file)",
+   "godot4_form": "Godot 4 class names: CharacterBody2D, Node3D, Sprite2D, Area2D/3D, RigidBody2D/3D, Marker2D, VisibleOnScreenNotifier2D, MeshInstance3D, Camera3D, RayCast3D ...",
+   "note": "A .tscn with a Godot 3 class name fails to load in 4.x ('Cannot get class'). Scene-file form of the renamed-class rules.",
+   "severity": "error",
+   "source_url": "https://github.com/godotengine/godot/blob/4.7/editor/project_upgrade/renames_map_3_to_4.cpp",
+   "ext": [
+    "tscn"
+   ]
+  }
+ ]
+}

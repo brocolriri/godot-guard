@@ -1,4 +1,7 @@
-# godot-guard — Godot 4 guardrails for Claude Code
+# godot-guard — Godot 4 guardrails for AI coding agents
+
+> **Not using Claude Code?** The same rules for **Cursor, Codex CLI and GitHub Copilot** live in
+> [`crosstool/`](crosstool/) — one `AGENTS.md` and the API scanner, no plugin needed.
 
 **Verified on Godot 4.7.2 (2026-09-15).** Three skills + one hook that stop the most common ways
 Claude Code breaks a Godot 4 project:
@@ -58,6 +61,22 @@ player.gd:28:2: [error] move_and_slide_arg: move_and_slide(velocity)
 
 Rules live in `reference/godot3_isms.json` and `reference/deltas.json` (each row cites the official Godot doc).
 
+## Cursor / Codex CLI / GitHub Copilot
+
+[`crosstool/`](crosstool/) carries the same API guard in the format those tools read: a single
+`AGENTS.md` (read by Codex CLI, Cursor, Copilot, Jules, Aider, Zed and ~20 others) plus
+`api_guard.py` and `version_pin.py`, which need no tool at all.
+
+```bash
+cp crosstool/AGENTS.md /path/to/your/game/AGENTS.md
+mkdir -p /path/to/your/game/.godot-guard && cp -r crosstool/scripts crosstool/reference /path/to/your/game/.godot-guard/
+```
+
+The paid edition for those tools adds Cursor `.mdc` rules, Copilot `.instructions.md`, **three
+Cursor hooks that block bad edits instead of advising against them**, the verify loop, scene map,
+tscn check and uid keeper:
+**[Godot 4 Guardrails for Cursor, Codex & Copilot](https://brocolriri.gumroad.com/l/godot-guard-crosstool)**.
+
 ## Pro version
 
 **[Godot 4 Guardrails Pro](https://brocolriri.gumroad.com/l/godot-guard-pro)** adds the proof layer:
@@ -75,4 +94,5 @@ three `CLAUDE.md` templates (2D, 3D, C#), the 4.4→4.7 delta tables, and a work
 
 ## License
 
-MIT. Not affiliated with or endorsed by the Godot Foundation or Anthropic; "Godot" and "Claude" are used descriptively.
+MIT. Not affiliated with or endorsed by the Godot Foundation, Anthropic, Anysphere (Cursor),
+OpenAI, GitHub or Microsoft; those names are used descriptively.
