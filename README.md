@@ -1,7 +1,8 @@
 # godot-guard — Godot 4 guardrails for AI coding agents
 
 **This repo is free:** the Godot-3-ism linter, the scene map (real node paths) and the version pin —
-as three Claude Code skills, and as an `AGENTS.md` / Cursor rule for every other agent.
+as an **editor plugin you can enable in Godot itself**, as three Claude Code skills, and as an
+`AGENTS.md` / Cursor rule for every other agent.
 
 **The paid editions add the layer that *stops* the bad edit** instead of advising against it:
 hooks that block `.uid` / `.godot/` writes, and a verify run (import → parse → every scene → N frames)
@@ -67,6 +68,16 @@ player.gd:28:2: [error] move_and_slide_arg: move_and_slide(velocity)
 | Enemies/Enemy | CharacterBody2D | `$Enemies/Enemy` | `get_node("Enemies/Enemy")` |
 | HUD/ScoreLabel | Label | `$HUD/ScoreLabel` | |
 ```
+
+## In the Godot editor (no AI tool needed)
+
+Copy `addons/godot_guard/` into your project and turn **godot-guard** on in
+*Project > Project Settings > Plugins*. A **godot-guard** tab appears in the bottom panel:
+press *Scan project* and every Godot 3 idiom in the project is listed with the line, what was
+found and what to write instead. Double-click a row to jump to it.
+
+The editor scanner is pure GDScript — no Python, no network, nothing to install — and the test
+suite asserts it reports exactly what the command-line scanner reports (`tests/static/test_addon_parity.py`).
 
 ## Scripts (usable without Claude)
 
