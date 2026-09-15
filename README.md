@@ -13,15 +13,12 @@ Pure Python 3.8+ standard library. No MCP server, no editor plugin, no network. 
 
 ## Install
 
-```bash
-# from the community marketplace (once listed)
-/plugin marketplace add anthropics/claude-plugins-community
-/plugin install godot-guard@claude-community
-
-# or straight from this repo
-git clone https://github.com/brocolriri/godot-guard
-claude --plugin-dir ./godot-guard
+```text
+/plugin marketplace add brocolriri/godot-guard
+/plugin install godot-guard@godot-guard
 ```
+
+or, without a marketplace: `git clone https://github.com/brocolriri/godot-guard && claude --plugin-dir ./godot-guard`
 
 Then, inside your Godot project:
 

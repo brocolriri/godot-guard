@@ -1,0 +1,18 @@
+{
+  "name": "godot-guard",
+  "owner": { "name": "brocolriri" },
+  "metadata": { "description": "Godot 4 guardrails for Claude Code", "version": "0.1.0" },
+  "plugins": [
+    {
+      "name": "godot-guard",
+      "source": "./",
+      "description": "Godot 4 guardrails for Claude Code: Godot-3-ism linter (92 sourced rules), scene map with real node paths, version pin into CLAUDE.md. Verified on Godot 4.7.2.",
+      "version": "0.1.0",
+      "author": { "name": "brocolriri" },
+      "homepage": "https://github.com/brocolriri/godot-guard",
+      "license": "MIT",
+      "keywords": ["godot", "godot4", "gdscript", "game-dev", "linter"],
+      "category": "development"
+    }
+  ]
+}
