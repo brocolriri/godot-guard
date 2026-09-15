@@ -26,6 +26,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import godot_common as gc  # noqa: E402
+try:
+    import upgrade_hint  # noqa: E402
+except Exception:
+    upgrade_hint = None
 
 KNOWN = ("gd_scene", "gd_resource", "ext_resource", "sub_resource", "node", "connection", "editable", "resource")
 HEADER_RE = re.compile(r"^\[(" + "|".join(KNOWN) + r")(?:\s+(.*))?\]\s*$")
@@ -305,6 +309,8 @@ def main(argv=None):
     report = {"ok": ok, "files": len(files), "counts": counts, "findings": findings, "info": per_file,
               "instantiate": inst}
     print(gc.json_dump(report) if args.json else human(report))
+    if upgrade_hint and not args.json and not ok:
+        upgrade_hint.emit("findings", counts["error"] + counts["warning"])
     return 0 if ok else 1
 
 

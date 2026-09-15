@@ -24,6 +24,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import godot_common as gc  # noqa: E402
+try:
+    import upgrade_hint  # noqa: E402
+except Exception:
+    upgrade_hint = None
 
 
 def step(name, ok, duration, errors=None, warnings=None, **extra):
@@ -191,6 +195,8 @@ def main(argv=None):
               "steps": steps, "ok": all(s["ok"] for s in steps)}
     print(gc.json_dump(report) if args.json else human(report))
     _write_state(project, report)
+    if upgrade_hint and not args.json and not report["ok"]:
+        upgrade_hint.emit("verify-failed")
     return 0 if report["ok"] else 1
 
 

@@ -18,6 +18,12 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    import upgrade_hint
+except Exception:  # never let the footer break a scan
+    upgrade_hint = None
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 REF_DIR = os.path.normpath(os.path.join(HERE, "..", "reference"))
 MIGRATE = "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.html"
@@ -301,6 +307,8 @@ def main(argv=None):
             print(format_text(findings))
         print("%d finding(s) in %d file(s) [%d rules from %s]" % (
             len(findings), len(files), len(rules), ", ".join(os.path.basename(s) for s in sources) or "builtin"))
+        if upgrade_hint:
+            upgrade_hint.emit("findings", len(findings))
     return 1 if findings else 0
 
 
