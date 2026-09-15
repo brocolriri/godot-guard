@@ -1,5 +1,22 @@
 # godot-guard — Godot 4 guardrails for AI coding agents
 
+**This repo is free:** the Godot-3-ism linter, the scene map (real node paths) and the version pin —
+as three Claude Code skills, and as an `AGENTS.md` / Cursor rule for every other agent.
+
+**The paid editions add the layer that *stops* the bad edit** instead of advising against it:
+hooks that block `.uid` / `.godot/` writes, and a verify run (import → parse → every scene → N frames)
+that refuses to let the agent say "done" until the project actually boots.
+
+| | For | Price |
+|---|---|---|
+| **[Godot 4 Guardrails Pro](https://brocolriri.gumroad.com/l/godot-guard-pro)** | Claude Code — 12 skills, 3 hooks, 3 `CLAUDE.md` templates | **$24** |
+| **[Godot 4 Guardrails Crosstool](https://brocolriri.gumroad.com/l/godot-guard-crosstool)** | Cursor · Codex CLI · GitHub Copilot — 6 topics × 3 formats, 3 Cursor hooks | **$19** |
+| **[Both editions](https://brocolriri.gumroad.com/l/godot-guard-both)** | bundle (separately $43) | **$29** |
+
+14-day refund, no questions. Details below, or scroll to [Pro version](#pro-version).
+
+---
+
 > **Not using Claude Code?** The same rules for **Cursor, Codex CLI and GitHub Copilot** live in
 > [`crosstool/`](crosstool/) — one `AGENTS.md` and the API scanner, no plugin needed.
 
@@ -76,11 +93,11 @@ mkdir -p /path/to/your/game/.godot-guard && cp -r crosstool/scripts crosstool/re
 The paid edition for those tools adds Cursor `.mdc` rules, Copilot `.instructions.md`, **three
 Cursor hooks that block bad edits instead of advising against them**, the verify loop, scene map,
 tscn check and uid keeper:
-**[Godot 4 Guardrails for Cursor, Codex & Copilot](https://brocolriri.gumroad.com/l/godot-guard-crosstool)**.
+**[Godot 4 Guardrails for Cursor, Codex & Copilot](https://brocolriri.gumroad.com/l/godot-guard-crosstool)** — $19.
 
 ## Pro version
 
-**[Godot 4 Guardrails Pro](https://brocolriri.gumroad.com/l/godot-guard-pro)** adds the proof layer:
+**[Godot 4 Guardrails Pro](https://brocolriri.gumroad.com/l/godot-guard-pro)** — $24 — adds the proof layer:
 `godot-verify` (import → parse → instantiate every scene → run N frames, JSON result, honest exit code),
 `tscn-surgeon` + `uid-keeper` (safe scene/resource edits with `.uid` sidecars), `typed-gdscript`,
 `test-runner` (GUT/GdUnit4 headless), `signal-wiring`, `autoload-config`, `export-check`, `feature-slice`,
