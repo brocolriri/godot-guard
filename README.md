@@ -68,7 +68,8 @@ Rules live in `reference/godot3_isms.json` and `reference/deltas.json` (each row
 `api_guard.py` and `version_pin.py`, which need no tool at all.
 
 ```bash
-cp crosstool/AGENTS.md /path/to/your/game/AGENTS.md
+cp crosstool/AGENTS.md /path/to/your/game/AGENTS.md           # Codex CLI and ~25 other agents
+cp rules/godot-api-guard.mdc /path/to/your/game/.cursor/rules/  # native Cursor rule
 mkdir -p /path/to/your/game/.godot-guard && cp -r crosstool/scripts crosstool/reference /path/to/your/game/.godot-guard/
 ```
 

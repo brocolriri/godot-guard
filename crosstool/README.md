@@ -16,6 +16,10 @@ cp -r crosstool/scripts crosstool/reference /path/to/your/game/.godot-guard/
 `AGENTS.md` at the project root is read by Codex CLI, and by Cursor, Copilot, Jules, Aider, Zed
 and ~20 other agents. Nothing else to configure.
 
+**Cursor users**: the same topic is also published as a native Cursor rule at
+[`rules/godot-api-guard.mdc`](../rules/godot-api-guard.mdc) — drop it in your project's
+`.cursor/rules/` and Cursor attaches it automatically to every `.gd`, `.cs`, `.tscn` and `.tres`.
+
 ## Use
 
 ```bash
