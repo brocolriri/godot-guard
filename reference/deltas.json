@@ -1,0 +1,568 @@
+{
+  "schema": "godot_deltas/1",
+  "verified_on": "2026-09-15",
+  "version_facts": {
+    "current_stable": "4.7.2",
+    "current_stable_date": "2026-08-16",
+    "current_stable_date_note": "endoflife.date lists 4.7.2 on 2026-08-16; godotengine.org/download shows '18 August 2026' (page shows the announcement date). Both checked 2026-09-15.",
+    "minor_release_dates": {
+      "4.4": "2025-03-03",
+      "4.5": "2025-09-15",
+      "4.6": "2026-01-26",
+      "4.7": "2026-06-18"
+    },
+    "latest_patches": {
+      "4.4": "4.4.1 (2025-03-26)",
+      "4.5": "4.5.2 (2026-03-18)",
+      "4.6": "4.6.3 (2026-05-20)",
+      "4.7": "4.7.2 (2026-08-16)"
+    },
+    "branch_state": "4.7 branch version.py = 4.7.3 status rc; master = 4.8 dev (checked 2026-09-15)",
+    "lts_3x": "3.6.3 (2026-08-21) — Godot 3 LTS line",
+    "sources": [
+      "https://endoflife.date/godot",
+      "https://godotengine.org/download/windows/",
+      "https://github.com/godotengine/godot/blob/4.7/version.py",
+      "https://github.com/godotengine/godot/blob/master/version.py"
+    ]
+  },
+  "upgrade_guides": {
+    "4.4": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.4.html",
+    "4.5": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.5.html",
+    "4.6": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.6.html",
+    "4.7": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.7.html"
+  },
+  "regex_flags": "python re, compile with re.MULTILINE; null = not statically detectable",
+  "rows": [
+    {
+      "version": "4.4",
+      "area": "GDScript",
+      "change": "Typed dictionaries `Dictionary[K, V]`",
+      "old": "Dictionaries untyped; type comments only",
+      "new": "var d: Dictionary[String, int] = {}; both key and value type required (use Variant for either); nested typed collections not supported",
+      "agent_rule": "On 4.4+ type dictionaries as `Dictionary[K, V]`, never nest a typed collection inside the brackets, and never emit this syntax for a project pinned below 4.4.",
+      "detectable_pattern": "Dictionary\\[[^\\]\\n]*(?:Array|Dictionary)\\[",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/gdscript_basics.html"
+    },
+    {
+      "version": "4.4",
+      "area": "Resources / files",
+      "change": ".uid sidecar files for scripts and shaders",
+      "old": "Only imported resources and scenes carried UIDs; scripts referenced by path",
+      "new": "Godot writes `<file>.gd.uid` / `<file>.gdshader.uid` next to the source; uid:// paths (e.g. preload(\"uid://...\")) resolve through them",
+      "agent_rule": "When creating, moving, renaming or deleting a .gd/.gdshader file, create/move/rename/delete its .uid sidecar in the same operation, never hand-edit or duplicate a UID, and never gitignore *.uid.",
+      "detectable_pattern": null,
+      "source_url": "https://godotengine.org/article/uid-changes-coming-to-godot-4-4/"
+    },
+    {
+      "version": "4.4",
+      "area": "GDScript",
+      "change": "@export_file stores uid:// instead of res:// when set from the Inspector",
+      "old": "@export_file values were res:// paths",
+      "new": "Values assigned in the Inspector are stored as uid:// (arrays may mix uid:// and res://); GH-97912",
+      "agent_rule": "Treat @export_file values as opaque loadable paths (pass to load()/ResourceLoader), never string-match `res://` on them, and use @export_file_path (4.5+) when a raw res:// path is genuinely needed.",
+      "detectable_pattern": "@export_file\\b(?!_path)",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.4.html"
+    },
+    {
+      "version": "4.4",
+      "area": "Core",
+      "change": "FileAccess.store_* now return bool",
+      "old": "store_8/16/32/64/buffer/csv_line/double/float/half/line/pascal_string/real/string/var returned void",
+      "new": "Same methods return bool (false on failure); GH-78289. GDScript-compatible, C# binary-incompatible",
+      "agent_rule": "After FileAccess.store_* calls in write paths, check the bool result or FileAccess.get_error() instead of assuming the write succeeded.",
+      "detectable_pattern": "^\\s*[\\w.$]+\\.store_(8|16|32|64|buffer|csv_line|double|float|half|line|pascal_string|real|string|var)\\s*\\(",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.4.html"
+    },
+    {
+      "version": "4.4",
+      "area": "Core",
+      "change": "OS.read_string_from_stdin(buffer_size) parameter is now required",
+      "old": "OS.read_string_from_stdin() (implicit 1024-byte buffer)",
+      "new": "OS.read_string_from_stdin(buffer_size: int); GH-91201; GDScript-incompatible",
+      "agent_rule": "Always pass an explicit buffer_size to OS.read_string_from_stdin().",
+      "detectable_pattern": "\\bread_string_from_stdin\\s*\\(\\s*\\)",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.4.html"
+    },
+    {
+      "version": "4.4",
+      "area": "Rendering",
+      "change": "RenderingDevice.draw_list_begin() signature reduced",
+      "old": "Many parameters (initial/final color/depth actions, region, ...)",
+      "new": "Adds optional `breadcrumb`, removes many previous parameters; GDScript-incompatible",
+      "agent_rule": "Do not copy pre-4.4 draw_list_begin() argument lists; use the 4.4+ signature from the class reference.",
+      "detectable_pattern": "\\.draw_list_begin\\s*\\(",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.4.html"
+    },
+    {
+      "version": "4.4",
+      "area": "GUI",
+      "change": "GraphEdit.frame_rect_changed signal parameter type",
+      "old": "new_rect: Vector2",
+      "new": "new_rect: Rect2 (incompatible in all bindings)",
+      "agent_rule": "Type the frame_rect_changed handler parameter as Rect2.",
+      "detectable_pattern": "frame_rect_changed",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.4.html"
+    },
+    {
+      "version": "4.4",
+      "area": "Resources",
+      "change": "Curve enforces min_value/max_value",
+      "old": "Points outside [0, 1] tolerated",
+      "new": "Range enforced; adjust min_value/max_value if points fall outside",
+      "agent_rule": "When adding Curve points outside 0..1, set min_value/max_value first.",
+      "detectable_pattern": null,
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.4.html"
+    },
+    {
+      "version": "4.4",
+      "area": "3D",
+      "change": "CSG uses the Manifold library",
+      "old": "Non-manifold CSG meshes tolerated",
+      "new": "Non-manifold meshes unsupported (GH-94321); use MeshInstance3D for quads/planes",
+      "agent_rule": "Never build CSG from non-manifold geometry (planes, quads); use MeshInstance3D instead.",
+      "detectable_pattern": null,
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.4.html"
+    },
+    {
+      "version": "4.4",
+      "area": "Physics",
+      "change": "Jolt Physics integrated into the engine (opt-in)",
+      "old": "Jolt only as a third-party extension",
+      "new": "Built-in, enabled via physics/3d/physics_engine project setting",
+      "agent_rule": "On 4.4/4.5 assume Godot Physics unless project.godot sets physics/3d/physics_engine to Jolt.",
+      "detectable_pattern": "physics/3d/physics_engine",
+      "source_url": "https://godotengine.org/releases/4.4/"
+    },
+    {
+      "version": "4.4",
+      "area": "GDScript",
+      "change": "@export_tool_button annotation",
+      "old": "Inspector buttons required editor plugins",
+      "new": "@export_tool_button(text: String, icon: String = \"\") exports a Callable as a button in @tool scripts",
+      "agent_rule": "Use @export_tool_button only in @tool scripts and only for projects pinned to 4.4+.",
+      "detectable_pattern": "@export_tool_button\\b",
+      "source_url": "https://docs.godotengine.org/en/stable/classes/class_@gdscript.html"
+    },
+    {
+      "version": "4.4",
+      "area": "Platform",
+      "change": "Android sensor events disabled by default",
+      "old": "Accelerometer/gyroscope events always delivered",
+      "new": "Must be enabled under Input Devices > Sensors (GH-94799)",
+      "agent_rule": "If code reads Input.get_accelerometer()/gyroscope on Android, tell the user to enable the sensor project settings.",
+      "detectable_pattern": "Input\\.get_(accelerometer|gravity|gyroscope|magnetometer)\\s*\\(",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.4.html"
+    },
+    {
+      "version": "4.5",
+      "area": "GDScript",
+      "change": "@abstract classes and methods",
+      "old": "No abstract support; runtime assert/push_error patterns",
+      "new": "@abstract on class or method; abstract method has no body (newline/semicolon after header); a class with any unimplemented abstract method must itself be @abstract",
+      "agent_rule": "Use @abstract only on 4.5+; give abstract methods no body and mark every class that leaves an abstract method unimplemented as @abstract.",
+      "detectable_pattern": "@abstract\\b",
+      "source_url": "https://docs.godotengine.org/en/stable/classes/class_@gdscript.html"
+    },
+    {
+      "version": "4.5",
+      "area": "GDScript",
+      "change": "Variadic functions (rest parameter)",
+      "old": "Use Array parameters",
+      "new": "func f(a, b = 0, ...args): — at most one rest parameter, last, no default; typed Array not supported as the rest type; no spread syntax at call sites",
+      "agent_rule": "Declare at most one trailing `...args` parameter, never give it a default or a typed-array type, and never spread an array into a call (`f(...arr)` is invalid).",
+      "detectable_pattern": "\\.\\.\\.\\w+",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/gdscript_basics.html"
+    },
+    {
+      "version": "4.5",
+      "area": "Core",
+      "change": "Resource.duplicate(true) no longer duplicates external subresources",
+      "old": "duplicate(true) copied everything including external resources",
+      "new": "Only internal (path-less or scene-local) subresources are copied; use duplicate_deep(DEEP_DUPLICATE_ALL) for the old behavior (modes: NONE=0, INTERNAL=1, ALL=2)",
+      "agent_rule": "When a deep copy must include external .tres/.res subresources, call duplicate_deep(Resource.DEEP_DUPLICATE_ALL) instead of duplicate(true).",
+      "detectable_pattern": "\\.duplicate\\s*\\(\\s*true\\s*\\)",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.5.html"
+    },
+    {
+      "version": "4.5",
+      "area": "GDScript",
+      "change": "@export_file_path annotation",
+      "old": "No way to keep a raw res:// string with a file picker",
+      "new": "@export_file_path(filter, ...) stores the raw path (may break if the file moves)",
+      "agent_rule": "Use @export_file_path only when a raw res:// string is required and the project is 4.5+; otherwise prefer @export_file.",
+      "detectable_pattern": "@export_file_path\\b",
+      "source_url": "https://docs.godotengine.org/en/stable/classes/class_@gdscript.html"
+    },
+    {
+      "version": "4.5",
+      "area": "GUI",
+      "change": "RichTextLabel.add_image/update_image parameters",
+      "old": "add_image(image, width, height, color, inline_align, region, key, pad, tooltip, size_in_percent)",
+      "new": "size_in_percent replaced by width_in_percent + height_in_percent; alt_text added (GH-107347, GH-76829). Old positional size_in_percent now feeds width_in_percent and height defaults to false",
+      "agent_rule": "Pass width_in_percent and height_in_percent explicitly (both) when calling add_image/update_image with percentage sizing.",
+      "detectable_pattern": "\\.(add_image|update_image)\\s*\\(",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.5.html"
+    },
+    {
+      "version": "4.5",
+      "area": "Networking",
+      "change": "Node.get_rpc_config renamed",
+      "old": "node.get_rpc_config()",
+      "new": "node.get_node_rpc_config() (GH-106848); GDScript-incompatible",
+      "agent_rule": "Call get_node_rpc_config() on 4.5+.",
+      "detectable_pattern": "\\.get_rpc_config\\s*\\(",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.5.html"
+    },
+    {
+      "version": "4.5",
+      "area": "Networking",
+      "change": "JSONRPC.set_scope replaced",
+      "old": "JSONRPC.set_scope(...)",
+      "new": "JSONRPC.set_method(...) (GH-104890)",
+      "agent_rule": "Use JSONRPC.set_method(); set_scope is a non-functional stub.",
+      "detectable_pattern": "\\.set_scope\\s*\\(",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.5.html"
+    },
+    {
+      "version": "4.5",
+      "area": "Rendering",
+      "change": "RenderingServer interpolation methods removed",
+      "old": "instance_reset_physics_interpolation(), instance_set_interpolated()",
+      "new": "Removed; GDScript-incompatible",
+      "agent_rule": "Do not call RenderingServer.instance_reset_physics_interpolation/instance_set_interpolated on 4.5+.",
+      "detectable_pattern": "\\.instance_(reset_physics_interpolation|set_interpolated)\\s*\\(",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.5.html"
+    },
+    {
+      "version": "4.5",
+      "area": "2D",
+      "change": "TileMapLayer physics chunking on by default",
+      "old": "get_coords_for_body_rid() returned the exact cell",
+      "new": "Chunked by physics_quadrant_size; set physics_quadrant_size = 1 to restore exact cells",
+      "agent_rule": "If code maps a body RID back to a cell, set TileMapLayer.physics_quadrant_size = 1 or expect quadrant-precision results.",
+      "detectable_pattern": "\\.get_coords_for_body_rid\\s*\\(",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.5.html"
+    },
+    {
+      "version": "4.5",
+      "area": "Physics (Jolt)",
+      "change": "Area3D always reports static-body overlaps",
+      "old": "physics/jolt_physics_3d/simulation/areas_detect_static_bodies (default off)",
+      "new": "Setting removed (GH-105746); use layers/masks to ignore",
+      "agent_rule": "Never write the areas_detect_static_bodies setting; filter Area3D/static overlaps with collision layers and masks.",
+      "detectable_pattern": "areas_detect_static_bodies",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.5.html"
+    },
+    {
+      "version": "4.5",
+      "area": "Navigation",
+      "change": "Navigation regions update asynchronously by default",
+      "old": "Synchronous region iteration",
+      "new": "Threaded; toggle navigation/world/region_use_async_iterations; merge_rasterizer_cell_scale may need lowering (min 0.01)",
+      "agent_rule": "Do not assume NavigationRegion changes are visible in the same frame; await NavigationServer map_changed or disable async iterations when determinism matters.",
+      "detectable_pattern": null,
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.5.html"
+    },
+    {
+      "version": "4.5",
+      "area": "Core",
+      "change": "ProjectSettings.add_property_info() warns on invalid keys",
+      "old": "Unknown keys (e.g. usage) silently ignored",
+      "new": "Warning printed; use set_as_basic()/set_restart_if_changed()/set_as_internal()",
+      "agent_rule": "Pass only name/type/hint/hint_string to add_property_info and set usage flags through the dedicated ProjectSettings methods.",
+      "detectable_pattern": "\\.add_property_info\\s*\\(",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.5.html"
+    },
+    {
+      "version": "4.5",
+      "area": "Import",
+      "change": "3D importer non-joint node hierarchy fix",
+      "old": "Non-joint nodes in a skeleton hierarchy mis-handled",
+      "new": "Fixed for new .gltf/.glb/.blend/.fbx files; existing files keep old behavior unless the 'Naming Version' import option changes (GH-104184, GH-107352)",
+      "agent_rule": "Do not hard-code node paths under imported skeletons for newly imported models based on pre-4.5 hierarchies.",
+      "detectable_pattern": null,
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.5.html"
+    },
+    {
+      "version": "4.5",
+      "area": "Platform",
+      "change": "Android C# exports require .NET 9",
+      "old": ".NET 8 minimum everywhere",
+      "new": "Android needs net9.0 target (Google Play requirement); other platforms still .NET 8+",
+      "agent_rule": "For C# Android exports on 4.5+, target net9.0 in the .csproj.",
+      "detectable_pattern": "<TargetFramework>net8\\.0</TargetFramework>",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.5.html"
+    },
+    {
+      "version": "4.6",
+      "area": "Physics",
+      "change": "Jolt Physics is the default 3D physics engine for new projects",
+      "old": "Godot Physics default; Jolt opt-in",
+      "new": "New projects default to Jolt (GH-105737); existing projects keep their setting; physics/3d/physics_engine",
+      "agent_rule": "Read physics/3d/physics_engine from project.godot before relying on engine-specific 3D physics behavior; treat a 4.6+ project with no setting as Jolt.",
+      "detectable_pattern": null,
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.6.html"
+    },
+    {
+      "version": "4.6",
+      "area": "Rendering",
+      "change": "D3D12 default rendering driver on Windows for new projects",
+      "old": "Vulkan",
+      "new": "D3D12 (GH-113213); rendering/rendering_device/driver.windows",
+      "agent_rule": "Do not assume Vulkan on Windows for 4.6+ projects; check rendering/rendering_device/driver.windows.",
+      "detectable_pattern": null,
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.6.html"
+    },
+    {
+      "version": "4.6",
+      "area": "Scene files (.tscn)",
+      "change": "load_steps no longer written; per-node unique_id saved",
+      "old": "[gd_scene load_steps=N format=3 uid=...] header; nodes tracked by name/parent only",
+      "new": "load_steps dropped (GH-103352, unused by the editor); each [node ...] gets a unique_id=<int> (GH-106837, fallback when a name lookup fails); files remain loadable in 4.5",
+      "agent_rule": "When hand-editing a .tscn on 4.6+, never add load_steps, never invent or copy a node's unique_id (omit it and let the editor assign one on re-save), and keep existing unique_id values untouched.",
+      "detectable_pattern": "^\\[gd_scene[^\\]\\n]*\\bload_steps=",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.6.html"
+    },
+    {
+      "version": "4.6",
+      "area": "Animation",
+      "change": "AnimationPlayer animation-name properties are StringName",
+      "old": "assigned_animation/autoplay/current_animation: String; get_queue() -> PackedStringArray; current_animation_changed(name: String)",
+      "new": "StringName / Array[StringName] / StringName (GH-110767); GDScript-compatible, C# incompatible",
+      "agent_rule": "Type variables holding AnimationPlayer names as StringName (or Array[StringName] for get_queue()), not String/PackedStringArray.",
+      "detectable_pattern": ":\\s*PackedStringArray\\s*=\\s*[\\w.$]+\\.get_queue\\s*\\(",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.6.html"
+    },
+    {
+      "version": "4.6",
+      "area": "Core",
+      "change": "FileAccess.get_as_text() lost its skip_cr parameter",
+      "old": "get_as_text(skip_cr: bool = false)",
+      "new": "get_as_text()",
+      "agent_rule": "Call FileAccess.get_as_text() with no arguments.",
+      "detectable_pattern": "\\.get_as_text\\s*\\(\\s*(true|false)\\s*\\)",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.6.html"
+    },
+    {
+      "version": "4.6",
+      "area": "Networking",
+      "change": "StreamPeerTCP/TCPServer methods moved to base classes",
+      "old": "Declared on StreamPeerTCP / TCPServer",
+      "new": "disconnect_from_host/get_status/poll on StreamPeerSocket; is_connection_available/is_listening/stop on SocketServer (call sites unchanged)",
+      "agent_rule": "Nothing to change at call sites; do not write `is StreamPeerTCP` checks when a StreamPeerSocket would do.",
+      "detectable_pattern": null,
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.6.html"
+    },
+    {
+      "version": "4.6",
+      "area": "Editor",
+      "change": "EditorFileDialog.add_side_menu() removed",
+      "old": "add_side_menu(menu, title)",
+      "new": "Removed",
+      "agent_rule": "Do not call EditorFileDialog.add_side_menu() in editor plugins targeting 4.6+.",
+      "detectable_pattern": "\\.add_side_menu\\s*\\(",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.6.html"
+    },
+    {
+      "version": "4.6",
+      "area": "Rendering",
+      "change": "Glow and volumetric fog defaults/appearance",
+      "old": "glow_blend_mode Soft Light (2), glow_intensity 0.8, ssr_depth_tolerance 0.2",
+      "new": "Screen (1), 0.3, 0.5; glow_levels reweighted; fog blending brighter",
+      "agent_rule": "When reproducing pre-4.6 looks, set Environment glow_blend_mode/glow_intensity/glow_levels explicitly instead of relying on defaults.",
+      "detectable_pattern": null,
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.6.html"
+    },
+    {
+      "version": "4.6",
+      "area": "Navigation",
+      "change": "AStar get_point_path/get_id_path return empty when the source is disabled/solid",
+      "old": "Path returned regardless",
+      "new": "Empty array when the from-point is disabled (AStar2D/3D) or solid (AStarGrid2D)",
+      "agent_rule": "Check for an empty path result before indexing AStar path arrays.",
+      "detectable_pattern": "\\.get_(point|id)_path\\s*\\([^)\\n]*\\)\\s*\\[",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.6.html"
+    },
+    {
+      "version": "4.6",
+      "area": "3D",
+      "change": "MeshInstance3D.skeleton default",
+      "old": "NodePath(\"..\")",
+      "new": "NodePath(\"\") (compat via animation/compatibility/default_parent_skeleton_in_mesh_instance_3d)",
+      "agent_rule": "Set MeshInstance3D.skeleton explicitly when a mesh created in code must bind to a parent Skeleton3D.",
+      "detectable_pattern": null,
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.6.html"
+    },
+    {
+      "version": "4.6",
+      "area": "Platform",
+      "change": "Android build template directory layout",
+      "old": "android/build/src/...",
+      "new": "android/build/src/main/java/... (Android Studio layout)",
+      "agent_rule": "When editing Android build files, use the src/main/java path on 4.6+.",
+      "detectable_pattern": "android/build/src/(?!main/)",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.6.html"
+    },
+    {
+      "version": "4.7",
+      "area": "GDScript",
+      "change": "Overrides of typed-return methods inherit the return type and need an explicit return",
+      "old": "An override without `->` could fall off the end (implicit null)",
+      "new": "Return type inherited from the parent (GH-115763); missing return is a parse error — add `return null` (or the value) at the end",
+      "agent_rule": "When overriding any engine or user method that declares a return type (e.g. _get_drag_data, _get, _property_can_revert, custom base methods), end every code path with an explicit return.",
+      "detectable_pattern": null,
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.7.html"
+    },
+    {
+      "version": "4.7",
+      "area": "GDScript",
+      "change": "Packed array element assignment no longer calls the property setter",
+      "old": "arr_prop[i] = x invoked the setter for the whole packed-array property",
+      "new": "Element assignment does not trigger the setter (GH-113228)",
+      "agent_rule": "If logic must run when a PackedXArray property changes, reassign the whole array (or call the setter) instead of relying on `prop[i] = x`.",
+      "detectable_pattern": null,
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.7.html"
+    },
+    {
+      "version": "4.7",
+      "area": "Core",
+      "change": "Object.is_class() takes StringName",
+      "old": "is_class(class: String)",
+      "new": "is_class(class: StringName) (GH-118582); GDScript-compatible (String literals still convert)",
+      "agent_rule": "Pass a StringName literal (&\"Node2D\") or String to is_class(); both work, prefer &\"...\" in hot paths.",
+      "detectable_pattern": null,
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.7.html"
+    },
+    {
+      "version": "4.7",
+      "area": "Input",
+      "change": "Mouse and keyboard device IDs are no longer 0",
+      "old": "InputEvent.device == 0 for mouse/keyboard",
+      "new": "InputEvent.DEVICE_ID_MOUSE = 32, DEVICE_ID_KEYBOARD = 16 (GH-116274); DEVICE_ID_EMULATION = -1 unchanged",
+      "agent_rule": "Never compare event.device to 0 to detect mouse/keyboard; check the event class or compare against InputEvent.DEVICE_ID_MOUSE / DEVICE_ID_KEYBOARD.",
+      "detectable_pattern": "\\.device\\s*[=!]=\\s*0\\b",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.7.html"
+    },
+    {
+      "version": "4.7",
+      "area": "Animation",
+      "change": "Tween.tween_await(signal) / AwaitTweener",
+      "old": "No built-in way to pause a Tween sequence on a signal",
+      "new": "AwaitTweener tween_await(signal: Signal); AwaitTweener.set_timeout() when the signal may never fire (absent in 4.6 source)",
+      "agent_rule": "Use tween_await only for projects pinned to 4.7+; on older versions use tween_callback with a coroutine.",
+      "detectable_pattern": "\\.tween_await\\s*\\(",
+      "source_url": "https://docs.godotengine.org/en/stable/classes/class_tween.html"
+    },
+    {
+      "version": "4.7",
+      "area": "GUI",
+      "change": "RichTextLabel.add_image/update_image sizing parameters",
+      "old": "width/height: int; width_in_percent/height_in_percent: bool (added 4.5); ImageUpdateMask.UPDATE_WIDTH_IN_PERCENT",
+      "new": "width/height: float; width_unit/height_unit: RichTextLabel.ImageUnit (defaults 0); UPDATE_WIDTH_UNIT (GH-112617; the enum rename is GDScript-incompatible)",
+      "agent_rule": "On 4.7+ pass width_unit/height_unit (RichTextLabel.ImageUnit) and use ImageUpdateMask.UPDATE_WIDTH_UNIT; never use UPDATE_WIDTH_IN_PERCENT.",
+      "detectable_pattern": "UPDATE_(WIDTH|HEIGHT)_IN_PERCENT|\\b(width|height)_in_percent\\s*=",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.7.html"
+    },
+    {
+      "version": "4.7",
+      "area": "Audio",
+      "change": "AudioStreamPlayer.area_mask default 1 → 0",
+      "old": "area_mask default 1 (Area2D/3D audio_bus_override applied)",
+      "new": "Default 0 = disabled (GH-107679)",
+      "agent_rule": "If Area audio bus overrides must affect an AudioStreamPlayer, set its area_mask explicitly to the area layer.",
+      "detectable_pattern": "audio_bus_override",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.7.html"
+    },
+    {
+      "version": "4.7",
+      "area": "Audio",
+      "change": "AudioEffectSpectrumAnalyzer.tap_back_pos removed",
+      "old": "tap_back_pos property",
+      "new": "Removed (GH-114355)",
+      "agent_rule": "Do not read or write AudioEffectSpectrumAnalyzer.tap_back_pos.",
+      "detectable_pattern": "\\.tap_back_pos\\b",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.7.html"
+    },
+    {
+      "version": "4.7",
+      "area": "Physics (Jolt)",
+      "change": "WorldBoundaryShape3D plane distance sign",
+      "old": "Jolt interpreted plane.d with the opposite sign to Godot Physics",
+      "new": "Same convention as Godot Physics (GH-118948); flip the sign to keep 4.6 Jolt behavior",
+      "agent_rule": "Use the Godot Physics sign convention for WorldBoundaryShape3D.plane.d under Jolt on 4.7+.",
+      "detectable_pattern": "WorldBoundaryShape3D",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.7.html"
+    },
+    {
+      "version": "4.7",
+      "area": "Physics (Jolt)",
+      "change": "SoftBody3D mass and linear_stiffness under Jolt",
+      "old": "Mass default 0 (1 kg per point); stiffness applied differently",
+      "new": "Mass default 1 kg total; linear_stiffness matches Godot Physics; Area3D now reports SoftBody3D overlaps (GH-116041, GH-114198)",
+      "agent_rule": "Re-tune SoftBody3D total_mass/linear_stiffness/damping_coefficient when targeting 4.7 Jolt and mask Area3D/SoftBody3D interactions explicitly.",
+      "detectable_pattern": "SoftBody3D",
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.7.html"
+    },
+    {
+      "version": "4.7",
+      "area": "Animation",
+      "change": "AnimationNodeBlendSpace1D/2D sync → sync_mode enum",
+      "old": "bool sync property",
+      "new": "SyncMode enum sync_mode",
+      "agent_rule": "Set blend_space.sync_mode (enum) instead of a boolean sync.",
+      "detectable_pattern": null,
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.7.html"
+    },
+    {
+      "version": "4.7",
+      "area": "Rendering",
+      "change": "LinearToSRGB no clamp; CanvasItem line feather removed",
+      "old": "LinearToSRGB clamped to [0,1] on Mobile/Forward+; drawn lines had an antialiasing feather",
+      "new": "No clamp (GH-113956); no feather, lines appear thinner (GH-105122)",
+      "agent_rule": "Clamp manually in visual shaders if needed, and use a slightly larger width for draw_line() calls that relied on the old feather.",
+      "detectable_pattern": null,
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.7.html"
+    },
+    {
+      "version": "4.7",
+      "area": "Project defaults",
+      "change": "New projects default to stretch mode canvas_items / aspect expand",
+      "old": "display/window/stretch/mode = disabled, aspect = keep",
+      "new": "canvas_items / expand for newly created projects",
+      "agent_rule": "Read display/window/stretch/mode from project.godot instead of assuming `disabled`, and when a 4.7 project.godot omits it, treat it as canvas_items/expand.",
+      "detectable_pattern": null,
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.7.html"
+    },
+    {
+      "version": "4.7",
+      "area": "Platform",
+      "change": "Minimum macOS 11 (Big Sur)",
+      "old": "macOS 10.13",
+      "new": "macOS 11",
+      "agent_rule": "Do not promise macOS 10.13–10.15 support for 4.7 builds.",
+      "detectable_pattern": null,
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.7.html"
+    },
+    {
+      "version": "4.7",
+      "area": "3D",
+      "change": "LookAtModifier3D.relative default true → false",
+      "old": "true",
+      "new": "false",
+      "agent_rule": "Set LookAtModifier3D.relative explicitly when porting 4.6 setups.",
+      "detectable_pattern": null,
+      "source_url": "https://docs.godotengine.org/en/stable/tutorials/migrating/upgrading_to_godot_4.7.html"
+    },
+    {
+      "version": "4.8-dev",
+      "area": "GDScript",
+      "change": "[UPCOMING] String literals used as comments trigger STANDALONE_EXPRESSION",
+      "old": "A bare string literal (\"\"\"...\"\"\") on its own line was silently accepted as a comment (4.7 parser explicitly exempted STRING literals)",
+      "new": "PR #121833 (merged 2026-08-18, milestone 4.8): string literals are subject to the STANDALONE_EXPRESSION warning; still accepted, suppressible per line/project; removal planned for Godot 5",
+      "agent_rule": "Never use a standalone string literal as a comment or docstring; use `#` comments and `##` doc comments.",
+      "detectable_pattern": "^\\s*(\\\"\\\"\\\"|'''|\\\"[^\\\"\\n]*\\\"|'[^'\\n]*')\\s*(#.*)?$",
+      "source_url": "https://github.com/godotengine/godot/pull/121833"
+    }
+  ]
+}

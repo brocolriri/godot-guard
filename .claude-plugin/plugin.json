@@ -1,0 +1,10 @@
+{
+  "name": "godot-guard",
+  "description": "Guardrails for Godot 4.7 projects in Claude Code: flags Godot 3 idioms and 4.x API drift, maps every scene's node paths so Claude stops guessing, and pins the engine version into CLAUDE.md. Verified on Godot 4.7.2.",
+  "version": "0.1.0",
+  "author": { "name": "brocolriri" },
+  "homepage": "https://github.com/brocolriri/godot-guard",
+  "repository": "https://github.com/brocolriri/godot-guard",
+  "license": "MIT",
+  "keywords": ["godot", "godot4", "gdscript", "game-dev", "guardrails", "lint"]
+}

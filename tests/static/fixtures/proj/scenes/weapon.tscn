@@ -1,0 +1,5 @@
+[gd_scene format=3 uid="uid://fixweapon0000001"]
+
+[node name="Weapon" type="Node2D"]
+
+[node name="Muzzle" type="Marker2D" parent="."]
