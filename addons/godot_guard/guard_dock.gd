@@ -111,12 +111,12 @@ func _tooltip(f: Dictionary) -> String:
 
 
 func _severity_color(severity: String) -> Color:
-	var theme := EditorInterface.get_editor_theme()
-	if theme == null:
+	var editor_theme := EditorInterface.get_editor_theme()
+	if editor_theme == null:
 		return Color(0, 0, 0, 0)
 	var key := "error_color" if severity == "error" else "warning_color"
-	if theme.has_color(key, "Editor"):
-		return theme.get_color(key, "Editor")
+	if editor_theme.has_color(key, "Editor"):
+		return editor_theme.get_color(key, "Editor")
 	return Color(0, 0, 0, 0)
 
 
@@ -132,9 +132,9 @@ func _on_item_activated() -> void:
 	if path.get_extension().to_lower() == "gd":
 		# A file that still uses Godot 3 syntax often fails to parse, so load()
 		# returns null; reveal it in the FileSystem dock instead of doing nothing.
-		var script: Variant = ResourceLoader.load(path, "Script", ResourceLoader.CACHE_MODE_REUSE)
-		if script is Script:
-			EditorInterface.edit_script(script, line - 1, int(f["col"]) - 1, true)
+		var scr: Variant = ResourceLoader.load(path, "Script", ResourceLoader.CACHE_MODE_REUSE)
+		if scr is Script:
+			EditorInterface.edit_script(scr, line - 1, int(f["col"]) - 1, true)
 		else:
 			EditorInterface.select_file(path)
 	else:
